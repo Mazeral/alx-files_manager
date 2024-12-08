@@ -7,6 +7,8 @@ import AppController from '../controllers/AppController';
 // Import UserController class to handle API requests
 import UserController from '../controllers/UsersController';
 
+import AuthController from '../controllers/AuthController';
+
 // Create a new router instance
 const router = express.Router();
 
@@ -20,6 +22,12 @@ router.get('/stats', AppController.getStats);
 
 // POST /users
 router.post('/stats', UserController.postNew);
+
+router.get('/connect', AuthController.getConnect);
+
+router.get('/disconnect', AuthController.getDisconnect);
+
+router.get('/users/me', UserController.getMe);
 
 // Export the router to be used in the main application file
 export default router;
