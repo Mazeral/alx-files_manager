@@ -78,15 +78,14 @@ class UserController {
       if (!userId) {
         res.status(401).json({ error: 'Unauthorized' });
       }
-		const users = dbClient.client.db(dbClient.database).collection('users');
-		const { ObjectId } = require('mongodb');
-		const user = await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, _id: 1 } });
-		if (user)
-		res.status(200).json({ "email": user.email, "id": user._id });
-			else throw Error("Unauthorized")
+      const users = dbClient.client.db(dbClient.database).collection('users');
+      const { ObjectId } = require('mongodb');
+      const user = await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, _id: 1 } });
+      if (user) res.status(200).json({ email: user.email, id: user._id });
+      else throw Error('Unauthorized');
     } catch (error) {
       if (error.message === 'Unauthorized') {
-        res.status(401).json({ "error": 'Unauthorized' });
+        res.status(401).json({ error: 'Unauthorized' });
       }
     }
   }

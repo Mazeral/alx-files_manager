@@ -47,24 +47,24 @@ class RedisClient {
    * @param {string} key The key to retrieve
    * @returns {Promise<string|null>} The value associated with the key or null if an error occurs
    */
-async get(key) {
-  try {
+  async get(key) {
+    try {
     // Await the result of the asynchronous get operation
-    const value = await new Promise((resolve, reject) => {
-      this.client.get(key, (err, value) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(value);
-        }
+      const value = await new Promise((resolve, reject) => {
+        this.client.get(key, (err, value) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(value);
+          }
+        });
       });
-    });
-    return value;
-  } catch (error) {
-    console.log(`Error on get: ${error.message}`);
-    return null;
+      return value;
+    } catch (error) {
+      console.log(`Error on get: ${error.message}`);
+      return null;
+    }
   }
-}
 
   /**
    * Set a key-value pair with an optional expiration time
@@ -73,26 +73,27 @@ async get(key) {
    * @param {number} [duration] The expiration time in seconds (optional)
    * @returns {Promise<string|boolean>} The result of the set operation or false if an error occurs
    */
-async set(key, value, duration) {
-  try {
-    if (duration) {
+  async set(key, value, duration) {
+    try {
+      if (duration) {
       // Ensure duration is a valid positive integer
-      const parsedDuration = parseInt(duration, 10);
-      if (isNaN(parsedDuration) || parsedDuration <= 0) {
-        throw new Error(`Invalid duration: ${duration}`);
+        const parsedDuration = parseInt(duration, 10);
+        if (isNaN(parsedDuration) || parsedDuration <= 0) {
+          throw new Error(`Invalid duration: ${duration}`);
+        }
+        // Correct syntax: key, value, 'EX', duration
+        const result = await this.client.set(key, value, 'EX', parsedDuration);
+        return result;
       }
-      // Correct syntax: key, value, 'EX', duration
-      const result = await this.client.set(key, value, 'EX', parsedDuration);
+      // Set without expiration
+      const result = await this.client.set(key, value);
       return result;
+    } catch (error) {
+      console.log(`Error: ${error.message}`);
+      return false;
     }
-    // Set without expiration
-    const result = await this.client.set(key, value);
-    return result;
-  } catch (error) {
-    console.log(`Error: ${error.message}`);
-    return false;
   }
-}
+
   /**
    * Delete a key
    * @param {string} key The key to delete
