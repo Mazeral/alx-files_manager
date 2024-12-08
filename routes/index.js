@@ -21,7 +21,7 @@ router.get('/status', AppController.getStatus);
 router.get('/stats', AppController.getStats);
 
 // POST /users
-router.post('/stats', UserController.postNew);
+router.post('/users', UserController.postNew);
 
 router.get('/connect', AuthController.getConnect);
 
