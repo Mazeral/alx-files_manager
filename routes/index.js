@@ -4,6 +4,9 @@ import express from 'express';
 // Import the AppController class to handle API requests
 import AppController from '../controllers/AppController';
 
+// Import UserController class to handle API requests
+import UserController from '../controllers/UsersController';
+
 // Create a new router instance
 const router = express.Router();
 
@@ -14,6 +17,9 @@ router.get('/status', AppController.getStatus);
 
 // GET /stats: Returns statistics about the application (number of users and files)
 router.get('/stats', AppController.getStats);
+
+// POST /users
+router.post('/stats', UserController.postNew);
 
 // Export the router to be used in the main application file
 export default router;
