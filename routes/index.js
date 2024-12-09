@@ -9,6 +9,8 @@ import UserController from '../controllers/UsersController';
 
 import AuthController from '../controllers/AuthController';
 
+import FilesController from '../controllers/FilesController';
+
 // Create a new router instance
 const router = express.Router();
 
@@ -28,6 +30,8 @@ router.get('/connect', AuthController.getConnect);
 router.get('/disconnect', AuthController.getDisconnect);
 
 router.get('/users/me', UserController.getMe);
+
+router.post('/files', FilesController.postUpload)
 
 // Export the router to be used in the main application file
 export default router;

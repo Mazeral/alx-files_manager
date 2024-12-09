@@ -68,6 +68,7 @@ class UserController {
   }
 
   static async getMe(req, res) {
+		// gets the user based on the token
     try {
       const token = req.headers['x-token'];
       if (!token) {
