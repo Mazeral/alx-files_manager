@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
+import mime from 'mime-types';
+import Bull from 'bull';
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
-import mime from 'mime-types';
 
 class FilesController {
   static decodeBase64(base64String) {
@@ -41,16 +42,18 @@ class FilesController {
         res.status(400).json({ error: 'Missing name' });
       }
       if (!file.type) {
-        res.stataus(400).json({ error: 'Missing type' });
+        res.status(400).json({ error: 'Missing type' });
       }
-      if (file.type === 'file' || fileType === 'image') {
+      if (file.type === 'file' || file.type === 'image') {
         if (!file.data) {
           res.status(400).json({ error: 'Missing data' });
         }
       }
+
+      const fileQueue = new Bull('fileQueue');
       if (file.parentId && file.parentId !== 0) {
         // check if the parent file (The folder) exists in the database
-        const foundFolder = await files.findOne({ parentId: file.parentId }, { projection: { type: 1 } });
+        const foundFolder = await files.findOne({ _id: file._id }, { projection: { type: 1 } });
         if (!foundFolder) {
           res.status(400).json({ error: 'Parent not found' });
         }
@@ -99,6 +102,9 @@ class FilesController {
       //   "parentId": "0",
       //   "localPath": "/tmp/files_manager/155342df-2399-41da-9e8c-458b6ac52a0c"
       // }
+      if (file.type === 'image') {
+        fileQueue.add({ userId: user._id.toString(), fileId: fileUuid.toString() });
+      }
       const newFile = await files.insertOne({
         name: file.name,
         type: file.type,
@@ -130,7 +136,7 @@ class FilesController {
       if (!user) throw Error('Unauthorized');
       const files = dbClient.client.db(dbClient.database).collection('files');
       // Get all the files, if there's non, throw an error
-      const fileList = await find({ userId: user._id });
+      const fileList = await find({ userId: user._id }).toArray();
       if (!files) throw Error('Not found');
       res.status(200).json(fileList);
     } catch (error) {
@@ -269,13 +275,21 @@ class FilesController {
       if (!file || file.isPublic === false) throw Error('404 Not found');
       // If the file type is folder, return 400 Bad Request with an appropriate error message.
       if (file.type === 'folder') throw Error('Bad request');
+      const { size } = req.query;
+      if (size !== 500 && size !== 250 && size !== 100 && size !== undefined) {
+        throw Error('Invalid size');
+      }
       const fs = require('fs');
-      const exists = fs.existsSync(file.localPath);
+      const filePath = size ? `${file.localPath}_${size}` : file.localPath;
+      if (!fs.existsSync(filePath)) {
+        throw Error('Error Not found');
+      }
       if (!exists) throw Error('404 Not found');
+
       // Determine the MIME type and serve the file
-      const mimeType = mime.lookup(file.name) || 'application/octet-stream';
+      const mimeType = mime.lookup(filePath);
       res.setHeader('Content-Type', mimeType);
-      const fileStream = fs.createReadStream(file.localPath);
+      const fileStream = fs.createReadStream(filePath);
       fileStream.pipe(res);
     } catch (error) {
       if (error.message === 'Unauthorized') res.status(401).json({ error: 'Unauthorized' });
