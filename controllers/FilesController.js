@@ -182,6 +182,72 @@ class FilesController {
       else console.log(`FilesController Error: ${error.message}`);
     }
   }
+
+  static async putPublish(req, res) {
+    try {
+      const token = req.headers['x-token'];
+      if (!token) {
+        throw Error('Unauthorized');
+      }
+
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        throw Error('Unauthorized');
+      }
+      // getting the user from mongodb
+      const users = dbClient.client.db(dbClient.database).collection('users');
+      const { ObjectId } = require('mongodb');
+      const user = await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, _id: 1 } });
+      if (!user) throw Error('Unauthorized');
+
+      const files = dbClient.client.db(dbClient.database).collection('files');
+      const filter = { _id: req.params.id };
+      const update = { isPublic: true };
+      const updateResult = await files.updateOne(filter, update, (err, result) => {
+        if (err) throw Error('404 Not Found');
+        else if (result) res.status(200).json(updateResult);
+      });
+    } catch (error) {
+      if (error.message === 'Unauthorized') res.status(401).json({ error: 'Unauthorized' });
+      else if (error.message === '404 Not found') res.status(404).json({ error: 'Not found' });
+      else console.log(`FilesController Error: ${error.message}`);
+    }
+  }
+
+  static async putUnPublish(req, res) {
+    try {
+      const token = req.headers['x-token'];
+      if (!token) {
+        throw Error('Unauthorized');
+      }
+
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        throw Error('Unauthorized');
+      }
+      // getting the user from mongodb
+      const users = dbClient.client.db(dbClient.database).collection('users');
+      const { ObjectId } = require('mongodb');
+      const user = await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, _id: 1 } });
+      if (!user) throw Error('Unauthorized');
+
+      const files = dbClient.client.db(dbClient.database).collection('files');
+      const filter = { _id: req.params.id };
+      const update = { isPublic: false };
+      const updateResult = await files.updateOne(filter, update, (err, result) => {
+        if (err) throw Error('404 Not Found');
+        else if (result) res.status(200).json(updateResult);
+      });
+    } catch (error) {
+      if (error.message === 'Unauthorized') res.status(401).json({ error: 'Unauthorized' });
+      else if (error.message === '404 Not found') res.status(404).json({ error: 'Not found' });
+      else console.log(`FilesController Error: ${error.message}`);
+    }
+  }
+
+	static async getFile(req, res){
+
+	}
 }
 
 export default FilesController;

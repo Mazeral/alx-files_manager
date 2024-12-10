@@ -38,5 +38,16 @@ router.post('/files', FilesController.postUpload)
 router.get('/files/:id', FilesController.getShow)
 router.get('/files', FilesController.getIndex)
 
+
+// PUT /files/:id/publish => FilesController.putPublish
+// PUT /files/:id/publish => FilesController.putUnpublish
+router.put('/files/:id/publish', FilesController.putPublish)
+router.put('/files/:id/unpublish', FilesController.putUnPublish)
+
+
+// GET /files/:id/data => FilesController.getFile
+router.get('/files/:id/data', FilesController.getFile)
+
+
 // Export the router to be used in the main application file
 export default router;
