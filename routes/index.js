@@ -33,5 +33,10 @@ router.get('/users/me', UserController.getMe);
 
 router.post('/files', FilesController.postUpload)
 
+// GET /files/:id => FilesController.getShow
+// GET /files => FilesController.getIndex
+router.get('/files/:id', FilesController.getShow)
+router.get('/files', FilesController.getIndex)
+
 // Export the router to be used in the main application file
 export default router;

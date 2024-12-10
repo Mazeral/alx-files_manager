@@ -4,7 +4,7 @@ import dbClient from '../utils/db';
 
 class FilesController {
   static decodeBase64(base64String) {
-	  return Buffer.from(base64String, 'base64').toString('utf8');
+    return Buffer.from(base64String, 'base64').toString('utf8');
   }
 
   static async postUpload(req, res) {
@@ -111,6 +111,75 @@ class FilesController {
       if (error.message === 'Unauthorized') res.status(401).json({ error: 'Unauthorized' });
       else if (error.message === 'Parent is not a folder') res.status(400).json({ error: 'Parent is not a folder' });
       else console.log(`Error on FilesController: ${error.message}`);
+    }
+  }
+
+  static async getShow(req, res) {
+    try {
+      // creates a file for a user
+      const token = req.headers['x-token'];
+      if (!token) throw Error('Unauthorized');
+
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) throw Error('Unauthorized');
+      // getting the user from mongodb
+      const users = dbClient.client.db(dbClient.database).collection('users');
+      const { ObjectId } = require('mongodb');
+      const user = await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, _id: 1 } });
+      if (!user) throw Error('Unauthorized');
+      const files = dbClient.client.db(dbClient.database).collection('files');
+      // Get all the files, if there's non, throw an error
+      const fileList = await find({ userId: user._id });
+      if (!files) throw Error('Not found');
+      res.status(200).json(fileList);
+    } catch (error) {
+      if (error.message === 'Unauthorized') res.status(401).json({ error: 'Unauthorized' });
+      else if (error.message === 'Not found') res.status(404).json({ error: 'Not found' });
+      else console.log(`FilesController Error: ${error.message}`);
+    }
+  }
+
+  static async getIndex(req, res) {
+    try {
+      // creates a file for a user
+      const token = req.headers['x-token'];
+      if (!token) {
+        throw Error('Unauthorized');
+      }
+
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        throw Error('Unauthorized');
+      }
+      // getting the user from mongodb
+      const users = dbClient.client.db(dbClient.database).collection('users');
+      const { ObjectId } = require('mongodb');
+      const user = await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, _id: 1 } });
+      if (!user) throw Error('Unauthorized');
+      const parentId = req.query.parentId || '0'; // Default parentId to 0
+      const page = parseInt(req.query.page, 10) || 0; // Default page to 0
+      const files = dbClient.client.db(dbClient.database).collection('files');
+      // Query for files matching userId and parentId
+      const filter = { userId, parentId };
+      const fileList = await files
+        .find(filter)
+        .skip(page * 20) // Skip based on page number
+        .limit(20) // Limit results to 20 items
+        .toArray();
+
+      // Format the response
+      const formattedFiles = fileList.map((file) => ({
+        id: file._id.toString(),
+        name: file.name,
+        type: file.type,
+        isPublic: file.isPublic,
+        parentId: file.parentId,
+        userId: file.userId,
+      }));
+      res.status(200).json(formattedFiles);
+    } catch (error) {
+      if (error.message === 'Unauthorized') res.status(401).json({ error: 'Unauthorized' });
+      else console.log(`FilesController Error: ${error.message}`);
     }
   }
 }
