@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
+import mime from 'mime-types';
 
 class FilesController {
   static decodeBase64(base64String) {
@@ -245,9 +246,44 @@ class FilesController {
     }
   }
 
-	static async getFile(req, res){
+  static async getFile(req, res) {
+    try {
+      const token = req.headers['x-token'];
+      if (!token) {
+        throw Error('Unauthorized');
+      }
 
-	}
+      const userId = await redisClient.get(`auth_${token}`);
+      if (!userId) {
+        throw Error('Unauthorized');
+      }
+      // getting the user from mongodb
+      const users = dbClient.client.db(dbClient.database).collection('users');
+      const { ObjectId } = require('mongodb');
+      const user = await users.findOne({ _id: new ObjectId(userId) }, { projection: { email: 1, _id: 1 } });
+      if (!user) throw Error('Unauthorized');
+
+      const files = dbClient.client.db(dbClient.database).collection('files');
+      const file = files.findOne({ _id: req.params.id });
+      // If the file is not public and the user is not authenticated or not the owner, return 404 Not Found.
+      if (!file || file.isPublic === false) throw Error('404 Not found');
+      // If the file type is folder, return 400 Bad Request with an appropriate error message.
+      if (file.type === 'folder') throw Error('Bad request');
+      const fs = require('fs');
+      const exists = fs.existsSync(file.localPath);
+      if (!exists) throw Error('404 Not found');
+      // Determine the MIME type and serve the file
+      const mimeType = mime.lookup(file.name) || 'application/octet-stream';
+      res.setHeader('Content-Type', mimeType);
+      const fileStream = fs.createReadStream(file.localPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      if (error.message === 'Unauthorized') res.status(401).json({ error: 'Unauthorized' });
+      else if (error.message === '404 Not found') res.status(404).json({ error: 'Not found' });
+      else if (error.message === 'Bad request') res.status(400).json({ error: 'Bad request' });
+      else console.log(`FilesController Error: ${error.message}`);
+    }
+  }
 }
 
 export default FilesController;
