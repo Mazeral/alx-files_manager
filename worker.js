@@ -28,3 +28,20 @@ fileQueue.process(async (job) => {
   }
 });
 
+const userQueue = new Queue('userQueue', {redis: { host: '127.0.0.1', port: 6379 }})
+
+userQueue.proecss(async (job) => {
+	const { userId } = job.data
+
+	if (!userId){
+		throw Error("Missing userId")
+	}
+
+	const user  = await dbClient.db.collection('users').findOne({_id: userId})
+
+	if(!user){
+		throw Error("User not found")
+	}
+	
+	console.log(`Welcome ${user.email}!`);
+})

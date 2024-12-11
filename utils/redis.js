@@ -49,19 +49,9 @@ class RedisClient {
    */
   async get(key) {
     try {
-    // Await the result of the asynchronous get operation
-      const value = await new Promise((resolve, reject) => {
-        this.client.get(key, (err, value) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(value);
-          }
-        });
-      });
-      return value;
+		return await this.get(key);
     } catch (error) {
-      console.log(`Error on get: ${error.message}`);
+      console.log(`Error on redis get: ${error.message}`);
       return null;
     }
   }
@@ -89,7 +79,7 @@ class RedisClient {
       const result = await this.client.set(key, value);
       return result;
     } catch (error) {
-      console.log(`Error: ${error.message}`);
+      console.log(`Error on redis set: ${error.message}`);
       return false;
     }
   }
